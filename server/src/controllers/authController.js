@@ -1,70 +1,71 @@
-import { Request, Response } from 'express';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
-import { userModel } from '../models/user';
+const userModel = require('../models/user');
 
-// @desc Login
-// @route POST /api/auth/login
-// @access Public
-const login = async (request: Request, response: Response) => {
+// @desc login
+// @route post /api/auth/login
+// @access public
+const login = async (request, response) => {
   const { username, password } = request.body;
 
   if (!username || !password) {
-    return response.status(400).json({ message: 'All fields are required' });
+    return response.status(400).json({ message: 'all fields are required' });
   }
 
   const foundUser = await userModel.findOne({ username }).exec();
 
-  if (!foundUser || !foundUser.active) {
-    return response.status(401).json({ message: 'Unauthorized' });
+  if (!foundUser.username || !foundUser.active) {
+    return response.status(401).json({ message: 'unauthorized' });
   }
 
   const match = await bcrypt.compare(password, foundUser.password);
 
-  if (!match) return response.status(401).json({ message: 'Unauthorized' });
-
-  const accessToken = jwt.sign(
-    {
-      UserInfo: {
-        username: foundUser.username,
-        roles: foundUser.roles,
+  if (match) {
+    const accessToken = jwt.sign(
+      {
+        UserInfo: {
+          username: foundUser.username,
+          roles: foundUser.roles,
+        },
       },
-    },
-    process.env.ACCESS_TOKEN_SECRET,
-    { expiresIn: '15m' }
-  );
+      process.env.ACCESS_TOKEN_SECRET,
+      { expiresIn: '15m' }
+    );
 
-  const refreshToken = jwt.sign(
-    { username: foundUser.username },
-    process.env.REFRESH_TOKEN_SECRET,
-    { expiresIn: '7d' }
-  );
+    const refreshToken = jwt.sign(
+      { username: foundUser.username },
+      process.env.REFRESH_TOKEN_SECRET,
+      { expiresIn: '7d' }
+    );
 
-  // Create secure cookie with refresh token
-  response.cookie('jwt', refreshToken, {
-    httpOnly: true, //accessible only by web server
-    secure: true, //https
-    sameSite: 'none', //cross-site cookie
-    maxAge: 7 * 24 * 60 * 60 * 1000, //cookie expiry: set to match rT
-  });
+    // creates Secure Cookie with refresh token
+    response.cookie('__rt_token__', refreshToken, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 24 * 60 * 60 * 1000,
+    });
 
-  // Send accessToken containing username and roles
-  response.json({ accessToken });
+    // send accessToken containing username and user role
+    response.json({ foundUser, accessToken });
+  } else {
+    return response.status(401).json({ message: 'unauthorized' });
+  }
 };
 
-// @desc Register
-// @route POST /api/auth/register
-// @access Public
-const register = async (request: Request, response: Response) => {
+// @desc register
+// @route post /api/auth/register
+// @access public
+const register = async (request, response) => {
   const { username, password, roles } = request.body;
 
-  // Confirm data
+  // confirm data
   if (!username || !password) {
     return response.status(400).json({ message: 'All fields are required' });
   }
 
-  // Check for duplicate username
+  // check for duplicate username
   const duplicate = await userModel
     .findOne({ username })
     .collation({ locale: 'en', strength: 2 })
@@ -75,15 +76,16 @@ const register = async (request: Request, response: Response) => {
     return response.status(409).json({ message: 'Duplicate username' });
   }
 
-  // Hash password
+  // hash password
   const hashedPwd = await bcrypt.hash(password, 10); // salt rounds
 
-  const userObject =
-    !Array.isArray(roles) || !roles.length
-      ? { username, password: hashedPwd }
-      : { username, password: hashedPwd, roles };
+  const userObject = {
+    username,
+    password: hashedPwd,
+    roles,
+  };
 
-  // Create and store new user
+  // create and store new user
   const user = await userModel.create(userObject);
 
   if (user) {
@@ -100,37 +102,37 @@ const register = async (request: Request, response: Response) => {
     );
 
     const refreshToken = jwt.sign(
-      { username: user.username },
+      { username },
       process.env.REFRESH_TOKEN_SECRET,
       { expiresIn: '7d' }
     );
 
-    // Create secure cookie with refresh token
-    response.cookie('jwt', refreshToken, {
+    // create secure cookie with refresh token
+    response.cookie('__rt_token__', refreshToken, {
       httpOnly: true, //accessible only by web server
       secure: true, //https
       sameSite: 'none', //cross-site cookie
       maxAge: 7 * 24 * 60 * 60 * 1000, //cookie expiry: set to match rT
     });
 
-    // Send accessToken containing username and roles
-    response.json({ accessToken });
+    // send accessToken containing username and roles
+    response.json({ user, accessToken });
     response.status(201).json({ message: `New user ${username} created` });
   } else {
     response.status(400).json({ message: 'Invalid user data received' });
   }
 };
 
-// @desc Refresh
-// @route GET /api/auth/refresh
-// @access Public - because access token has expired
-const refresh = (request: Request, response: Response) => {
+// @desc refresh
+// @route get /api/auth/refresh
+// @access public - because access token has expired
+const refresh = (request, response) => {
   const cookies = request.cookies;
 
-  if (!cookies?.jwt)
+  if (!cookies?.__rt_token__)
     return response.status(401).json({ message: 'Unauthorized' });
 
-  const refreshToken = cookies.jwt;
+  const refreshToken = cookies.__rt_token__;
 
   jwt.verify(
     refreshToken,
@@ -163,18 +165,20 @@ const refresh = (request: Request, response: Response) => {
   );
 };
 
-// @desc Logout
-// @route POST /api/auth/logout
-// @access Public - just to clear cookie if exists
-const logout = (request: Request, response: Response) => {
+// @desc logout
+// @route post /api/auth/logout
+// @access public - just to clear cookie if exists
+const logout = async (request, response) => {
   const cookies = request.cookies;
-  if (!cookies?.jwt) return response.sendStatus(204); //No content
-  response.clearCookie('jwt', {
+  if (!cookies?.jwt) return response.sendStatus(204); //no content
+
+  response.clearCookie('__rt_token__', {
     httpOnly: true,
     sameSite: 'none',
     secure: true,
   });
+  response.sendStatus(204);
   response.json({ message: 'Cookie cleared' });
 };
 
-export { login, register, refresh, logout };
+module.exports = { login, register, refresh, logout };

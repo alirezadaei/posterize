@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 const AutoIncrement = require('mongoose-sequence')(mongoose);
 
 const noteSchema = new mongoose.Schema(
@@ -34,4 +34,4 @@ noteSchema.plugin(AutoIncrement, {
 
 const noteModel = mongoose.model('Note', noteSchema);
 
-export { noteModel };
+module.exports = noteModel;

@@ -1,17 +1,17 @@
 require('express-async-errors');
-import dotenv from 'dotenv';
-import mongoose from 'mongoose';
-import express from 'express';
-import path from 'path';
-import cookieParser from 'cookie-parser';
-import cors from 'cors';
+const dotenv = require('dotenv');
+const mongoose = require('mongoose');
+const express = require('express');
+const corsOptions = require('./src/config/corsOption');
+const cookieParser = require('cookie-parser');
+const cors = require('cors');
 
-import { logEvents, logger } from './src/middlewares/logger';
-import { errorHandler } from './src/middlewares/errorHandler';
-import { connectDB } from './src/config/db';
-import { router as authRoutes } from './src/routes/authRoutes';
-import { router as noteRoutes } from './src/routes/noteRoutes';
-import { router as userRoutes } from './src/routes/userRoutes';
+const { logEvents, logger } = require('./src/middlewares/logger');
+const errorHandler = require('./src/middlewares/errorHandler');
+const connectDB = require('./src/config/db');
+const authRoutes = require('./src/routes/authRoutes');
+const noteRoutes = require('./src/routes/noteRoutes');
+const userRoutes = require('./src/routes/userRoutes');
 
 const PORT = process.env.PORT || 4000;
 
@@ -23,7 +23,7 @@ connectDB();
 
 app.use(logger);
 
-app.use(cors({ credentials: true, optionsSuccessStatus: 200 }));
+app.use(cors(corsOptions));
 
 app.use(express.json());
 

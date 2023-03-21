@@ -1,13 +1,12 @@
-import { Request, Response } from 'express';
-import bcrypt from 'bcrypt';
+const bcrypt = require('bcrypt');
 
-import { userModel } from '../models/user';
-import { noteModel } from '../models/note';
+const userModel = require('../models/user');
+const noteModel = require('../models/note');
 
 // @desc Get all users
 // @route GET /api/users
 // @access Private
-const getAllUsers = async (request: Request, response: Response) => {
+const getAllUsers = async (_, response) => {
   // Get all users from MongoDB
   const users = await userModel.find().select('-password').lean();
 
@@ -22,7 +21,7 @@ const getAllUsers = async (request: Request, response: Response) => {
 // @desc Create new user
 // @route POST /api/users
 // @access Private
-const createNewUser = async (request: Request, response: Response) => {
+const createNewUser = async (request, response) => {
   const { username, password, roles } = request.body;
 
   // Confirm data
@@ -63,7 +62,7 @@ const createNewUser = async (request: Request, response: Response) => {
 // @desc Update a user
 // @route PATCH /api/users
 // @access Private
-const updateUser = async (request: Request, response: Response) => {
+const updateUser = async (request, response) => {
   const { id, username, roles, active, password } = request.body;
 
   // Confirm data
@@ -115,7 +114,7 @@ const updateUser = async (request: Request, response: Response) => {
 // @desc Delete a user
 // @route DELETE /api/users
 // @access Private
-const deleteUser = async (request: Request, response: Response) => {
+const deleteUser = async (request, response) => {
   const { id } = request.body;
 
   // Confirm data
@@ -143,4 +142,4 @@ const deleteUser = async (request: Request, response: Response) => {
   response.json(reply);
 };
 
-export { getAllUsers, createNewUser, updateUser, deleteUser };
+module.exports = { getAllUsers, createNewUser, updateUser, deleteUser };

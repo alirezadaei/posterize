@@ -1,12 +1,10 @@
-import { Request, Response } from 'express';
-
-import { noteModel } from '../models/note';
-import { userModel } from '../models/user';
+const noteModel = require('../models/note');
+const userModel = require('../models/user');
 
 // @desc Get all notes
 // @route GET /api/notes
 // @access Private
-const getAllNotes = async (request: Request, response: Response) => {
+const getAllNotes = async (_, response) => {
   // Get all notes from MongoDB
   const notes = await noteModel.find().lean();
 
@@ -31,7 +29,7 @@ const getAllNotes = async (request: Request, response: Response) => {
 // @desc Create new note
 // @route POST /api/notes
 // @access Private
-const createNewNote = async (request: Request, response: Response) => {
+const createNewNote = async (request, response) => {
   const { user, title, text } = request.body;
 
   // Confirm data
@@ -64,7 +62,7 @@ const createNewNote = async (request: Request, response: Response) => {
 // @desc Update a note
 // @route PATCH /api/notes
 // @access Private
-const updateNote = async (request: Request, response: Response) => {
+const updateNote = async (request, response) => {
   const { id, user, title, text, completed } = request.body;
 
   // Confirm data
@@ -104,7 +102,7 @@ const updateNote = async (request: Request, response: Response) => {
 // @desc Delete a note
 // @route DELETE /api/notes
 // @access Private
-const deleteNote = async (request: Request, response: Response) => {
+const deleteNote = async (request, response) => {
   const { id } = request.body;
 
   // Confirm data
@@ -126,4 +124,4 @@ const deleteNote = async (request: Request, response: Response) => {
   response.json(reply);
 };
 
-export { getAllNotes, createNewNote, updateNote, deleteNote };
+module.exports = { getAllNotes, createNewNote, updateNote, deleteNote };
