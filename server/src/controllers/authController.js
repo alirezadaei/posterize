@@ -15,6 +15,12 @@ const login = async (request, response) => {
 
   const foundUser = await userModel.findOne({ username }).exec();
 
+  if (foundUser == null || foundUser == undefined) {
+    return response
+      .status(404)
+      .json({ message: 'there is no user with the provided username' });
+  }
+
   if (!foundUser.username || !foundUser.active) {
     return response.status(401).json({ message: 'unauthorized' });
   }
@@ -47,8 +53,13 @@ const login = async (request, response) => {
       maxAge: 24 * 60 * 60 * 1000,
     });
 
+    const userData = {
+      username: foundUser.username,
+      active: foundUser.active,
+    };
+
     // send accessToken containing username and user role
-    response.json({ foundUser, accessToken });
+    response.json({ user: userData, accessToken });
   } else {
     return response.status(401).json({ message: 'unauthorized' });
   }
@@ -115,8 +126,10 @@ const register = async (request, response) => {
       maxAge: 7 * 24 * 60 * 60 * 1000, //cookie expiry: set to match rT
     });
 
+    const userData = { username: user.username, active: user.active };
+
     // send accessToken containing username and roles
-    response.json({ user, accessToken });
+    response.json({ user: userData, accessToken });
     response.status(201).json({ message: `New user ${username} created` });
   } else {
     response.status(400).json({ message: 'Invalid user data received' });
@@ -149,6 +162,11 @@ const refresh = (request, response) => {
       if (!foundUser)
         return response.status(401).json({ message: 'Unauthorized' });
 
+      const userData = {
+        username: foundUser.username,
+        active: foundUser.active,
+      };
+
       const accessToken = jwt.sign(
         {
           UserInfo: {
@@ -160,7 +178,7 @@ const refresh = (request, response) => {
         { expiresIn: '15m' }
       );
 
-      response.json({ accessToken });
+      response.json({ user: userData, accessToken });
     }
   );
 };

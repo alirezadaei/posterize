@@ -6,7 +6,7 @@ const corsOptions = require('./src/config/corsOption');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
 
-const { logEvents, logger } = require('./src/middlewares/logger');
+// const { logEvents, logger } = require('./src/middlewares/logger');
 const errorHandler = require('./src/middlewares/errorHandler');
 const connectDB = require('./src/config/db');
 const authRoutes = require('./src/routes/authRoutes');
@@ -21,7 +21,7 @@ const app = express();
 
 connectDB();
 
-app.use(logger);
+// app.use(logger);
 
 app.use(cors(corsOptions));
 
@@ -29,21 +29,21 @@ app.use(express.json());
 
 app.use(cookieParser());
 
+app.use(errorHandler);
+
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/notes', noteRoutes);
-
-app.use(errorHandler);
 
 mongoose.connection.once('open', () => {
   console.log('Connected to MongoDB');
   app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 });
 
-mongoose.connection.on('error', (err) => {
-  console.log(err);
-  logEvents(
-    `${err.no}: ${err.code}\t${err.syscall}\t${err.hostname}`,
-    'mongoErrLog.log'
-  );
-});
+// mongoose.connection.on('error', (err) => {
+//   console.log(err);
+//   logEvents(
+//     `${err.no}: ${err.code}\t${err.syscall}\t${err.hostname}`,
+//     'mongoErrLog.log'
+//   );
+// });
